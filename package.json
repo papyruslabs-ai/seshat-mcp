@@ -1,0 +1,41 @@
+{
+  "name": "@papyruslabsai/seshat-mcp",
+  "version": "0.20.1",
+  "mcpName": "ai.papyruslabs/seshat-mcp",
+  "description": "Structural code intelligence for AI agents: a compiled typed symbol graph over MCP.",
+  "type": "module",
+  "bin": {
+    "seshat-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist/"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/papyruslabs-ai/seshat-mcp.git"
+  },
+  "keywords": [
+    "mcp",
+    "code-intelligence",
+    "structural-analysis",
+    "blast-radius",
+    "ai-agents",
+    "seshat"
+  ],
+  "license": "MIT"
+}
