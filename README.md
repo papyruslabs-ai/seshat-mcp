@@ -65,10 +65,21 @@ engineer does: orient, trace, verify.
 - `find_by_constraint` — every function that touches a given table (or carries a given trait)
 - `find_dead_code` — unreachable symbols, safe to delete
 
-Every answer comes from the compiled graph and discloses the coverage behind it.
+**Read the history** (from the repo's commit record, backfilled on first sync)
+- `get_lineage` — how one function has actually changed: each commit typed by what moved
+  (body, calls, data, signature), CI pass/fail and reverts, what changes alongside it, and
+  what last forced a change here. Ask it before touching anything load-bearing.
+- `get_hotspots` — where development happens and where it fails: the most-changed code,
+  thrash spots where changes keep getting reverted or landing on red CI, and heavily used
+  code nobody has touched (stability pressure)
+- `get_co_change_clusters` — the hidden modules: code that changes together across files
+  even when no import connects it, so a change to one member usually means the rest
 
-> History and cross-cutting audit tools (hotspots, co-change clusters, lineage, topology,
-> semantic clones) are being hardened and will be added to this list as they land.
+Every answer comes from the compiled graph and discloses the coverage behind it. History
+is commit-resolution correlation and says so; it never claims causation it can't show.
+
+> Cross-cutting audit tools (test coverage, topology, semantic clones) are being hardened
+> and will be added to this list as they land.
 
 ## Privacy
 

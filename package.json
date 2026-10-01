@@ -1,6 +1,6 @@
 {
   "name": "@papyruslabsai/seshat-mcp",
-  "version": "0.20.1",
+  "version": "0.20.2",
   "mcpName": "ai.papyruslabs/seshat-mcp",
   "description": "Structural code intelligence for AI agents: a compiled typed symbol graph over MCP.",
   "type": "module",
