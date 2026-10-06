@@ -65,6 +65,12 @@ engineer does: orient, trace, verify.
 - `find_by_constraint` — every function that touches a given table (or carries a given trait)
 - `find_dead_code` — unreachable symbols, safe to delete
 
+**Check the calls themselves** (JavaScript, TypeScript and Python)
+- `query_call_sites` — calls by their state: async calls never awaited (floating promises,
+  promises tested as conditions), calls whose failure escapes the caller (no `try` or
+  `.catch` around that call), and results computed and dropped. Checked per call, not per
+  function. `get_entity` and `get_dependencies` show the same state on each call.
+
 **Read the history** (from the repo's commit record, backfilled on first sync)
 - `get_lineage` — how one function has actually changed: each commit typed by what moved
   (body, calls, data, signature), CI pass/fail and reverts, what changes alongside it, and

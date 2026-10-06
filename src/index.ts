@@ -129,6 +129,8 @@ Security & Quality Audits:
 - "Which endpoints require auth and which don't?" → get_auth_matrix
 - "Where is sensitive data exposed without protection?" → find_exposure_leaks
 - "Where are errors thrown but never caught?" → find_error_gaps
+- "Which async calls are never awaited?" → query_call_sites(find="unawaited_async")
+- "Which calls let a failure escape — checked per call, not per function?" → query_call_sites(find="unguarded_throws")
 - "Are there architecture violations?" → find_layer_violations
 - "Does framework-agnostic code import framework-specific code?" → find_runtime_violations
 - "Are there memory/lifecycle/ownership issues?" → find_ownership_violations
@@ -223,7 +225,7 @@ const TOOLS = [
   {
     name: 'get_entity',
     title: 'Get Entity Details',
-    description: 'Get everything about one function or class — its signature, callers, callees, data flow, constraints, source location, and database operations (which tables it reads/writes). Use this when you need to deeply understand a single symbol before modifying it. Returns more than reading the source file because it includes the dependency context.',
+    description: 'Get everything about one function or class — its signature, callers, callees, data flow, constraints, source location, and database operations (which tables it reads/writes). For JavaScript, TypeScript and Python it also lists the state of each call the function makes — awaited or not, inside a try or .catch, conditional, in a loop or callback — and flags risky ones. Use this when you need to deeply understand a single symbol before modifying it. Returns more than reading the source file because it includes the dependency context.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -237,7 +239,7 @@ const TOOLS = [
   {
     name: 'get_dependencies',
     title: 'Get Dependencies',
-    description: 'Trace who calls a function and what it calls, up to N levels deep. Use this instead of grep-for-function-name when you need the actual call chain — returns the dependency graph, not text matches. Covers callers (upstream), callees (downstream), or both.',
+    description: 'Trace who calls a function and what it calls, up to N levels deep. Use this instead of grep-for-function-name when you need the actual call chain — returns the dependency graph, not text matches. Covers callers (upstream), callees (downstream), or both. Where recorded (JavaScript, TypeScript, Python), each edge carries the state of its call: awaited or not, guarded by a try or .catch, conditional, in a loop or callback.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -455,6 +457,28 @@ const TOOLS = [
     inputSchema: {
       type: 'object' as const,
       properties: { project: projectParam },
+    },
+    annotations: READ_ONLY_OPEN,
+  },
+  {
+    name: 'query_call_sites',
+    title: 'Query Call Sites',
+    description: 'Find calls by their state — facts that belong to one specific call, not to either function: whether it is awaited, whether a try or .catch guards it, whether its result is used, whether it runs conditionally, in a loop, or in a callback. Presets: find="unawaited_async" (async calls never awaited: floating promises, void-detached calls, then-chains without .catch, promises tested as conditions); find="unguarded_throws" (calls whose failure escapes the caller: no try or .catch around them, or a try that cannot catch an unawaited rejection); find="discarded_results" (results computed and dropped — when the callee shows no effect, the call may do nothing). Checked per call, so more precise than find_error_gaps, which treats a try anywhere in a function as covering every call in it. JavaScript, TypeScript and Python; the response states coverage.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        project: projectParam,
+        find: { type: 'string', enum: ['unawaited_async', 'unguarded_throws', 'discarded_results'], description: 'Preset question. Omit it to filter by state alone.' },
+        await: { type: 'string', enum: ['await', 'then', 'none'], description: 'Filter: awaited, consumed by a then-chain, or neither' },
+        value: { type: 'string', enum: ['discarded', 'void', 'returned', 'bound', 'argument', 'receiver', 'condition', 'operand', 'thrown', 'yielded'], description: 'Filter: where the result goes' },
+        guard: { type: 'string', enum: ['try', 'catch', 'none'], description: 'Filter: a try around the call, a .catch on its chain, or neither' },
+        control: { type: 'string', enum: ['unconditional', 'branch', 'loop', 'handler', 'closure', 'after-exit'], description: 'Filter: runs unconditionally, in a branch, in a loop, in a catch block, inside a callback, or after an early return' },
+        dispatch: { type: 'string', enum: ['direct', 'param', 'method', 'this', 'super', 'computed', 'dynamic', 'reflective', 'import', 'inline'], description: 'Filter: how the callee is chosen (param = a function passed in by the caller\'s own caller)' },
+        caller: { type: 'string', description: 'Only calls made inside this function (id or name), or inside files whose path contains this text' },
+        callee: { type: 'string', description: 'Only calls to this function (id or name), or to a library function by name (e.g. "fetch")' },
+        include_tests: { type: 'boolean', description: 'Include call sites in test code (default: false)' },
+        limit: { type: 'number', description: 'Max sites to return (default: 50, max: 200)' },
+      },
     },
     annotations: READ_ONLY_OPEN,
   },
@@ -693,7 +717,7 @@ async function main(): Promise<void> {
   const server = new Server(
     {
       name: 'seshat',
-      version: '0.20.0',
+      version: '0.21.0',
     },
     {
       capabilities: { tools: {} },
